@@ -214,8 +214,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &404033899
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -282,8 +282,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &408305259
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -384,8 +384,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &687400017
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -452,8 +452,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &742258112
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -534,6 +534,54 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f081428f42620b94fb7af44a6aebefaf, type: 3}
+--- !u!1 &767142702
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 767142704}
+  - component: {fileID: 767142703}
+  m_Layer: 0
+  m_Name: BattleManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &767142703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 767142702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59194d96d3fd5904ab4b5ef426dc3f11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleManager
+  playerFearPoints: 0
+  enemyFearPoints: 0
+  currentRound: 0
+  initiativeHolder: 0
+--- !u!4 &767142704
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 767142702}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.72186, y: 0, z: 0.0025000004}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &841279608
 GameObject:
   m_ObjectHideFlags: 0
@@ -597,6 +645,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fbb19e8ebdde6dd4f9fbd1f5516bd966, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  handManager: {fileID: 1440637471}
+  battleManager: {fileID: 767142703}
 --- !u!4 &991960467
 Transform:
   m_ObjectHideFlags: 0
@@ -657,8 +707,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &1092119033
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -760,8 +810,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &1237392053
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -828,8 +878,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &1259642280
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -896,8 +946,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &1355197438
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -949,10 +999,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HandManager
   handRoot: {fileID: 1610438498}
+  startPosition: {x: 0, y: 0, z: 0}
   cardSpacing: 0.07
-  yOffset: 0.15
-  cardScale: 1
-  handCards: []
+  maxHandSize: 10
+  startingHandSize: 5
 --- !u!4 &1440637472
 Transform:
   m_ObjectHideFlags: 0
@@ -1013,8 +1063,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &1497404539
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1255,8 +1305,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &1967866761
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1357,8 +1407,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 1
+  opponentSlot: {fileID: 0}
 --- !u!65 &1978132685
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1425,8 +1475,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e91c5ca8b872d245b4405b9c1bd417c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotController
-  cardAnchor: {fileID: 0}
   isEnemySlot: 0
+  opponentSlot: {fileID: 0}
 --- !u!65 &2005094013
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1534,8 +1584,9 @@ SceneRoots:
   - {fileID: 2034802159}
   - {fileID: 762812178}
   - {fileID: 1185687721}
-  - {fileID: 1610438498}
   - {fileID: 1440637472}
   - {fileID: 991960467}
   - {fileID: 117217614}
   - {fileID: 1561040113}
+  - {fileID: 767142704}
+  - {fileID: 1610438498}

@@ -1,36 +1,42 @@
-using System.Collections.Generic;
-using System.Linq; // Необходим для LINQ в GetCombatOrder
 using UnityEngine;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine.UI;
 
+// Этот класс управляет основными правилами игры, ресурсами и фазами.
 public class BattleManager : MonoBehaviour
 {
-    // *** ПАТТЕРН SINGLETON ***
+    // --- СТАТИЧЕСКИЙ СИНГЛТОН ---
     public static BattleManager Instance;
 
-    // Enum для определения, чей ход / кому принадлежит ресурс
-    public enum PlayerType { Player, Enemy };
+    // Перечисление для обозначения игроков
+    public enum PlayerType { Player, Enemy }
 
-    // --- Ресурсы ---
+    // --- FEAR POINTS (FP) ---
     [Header("Очки Страха (FP)")]
-    [Tooltip("Текущее количество Очков Страха у игрока")]
-    public int playerFearPoints;
-    [Tooltip("Текущее количество Очков Страха у врага")]
-    public int enemyFearPoints;
+    // Максимальный предел FP, который никогда не будет превышен
+    public const int FP_CAP = 10;
 
-    // --- Раунды и Инициатива ---
-    [Header("Раунды и Инициатива")]
-    [Tooltip("Текущий номер раунда")]
-    public int currentRound = 0;
-    [Tooltip("Игрок, который ходит первым в этом раунде")]
-    public PlayerType initiativeHolder;
+    [Tooltip("Максимальное количество FP, доступное в текущем раунде.")]
+    public int maxFearPoints; // Меняется каждый раунд
 
-    // *** НОВОЕ ПОЛЕ: СПИСОК УЧАСТНИКОВ БОЯ ***
-    // Содержит все выставленные на поле карты (для сортировки в CombatPhase)
-    private List<CardController> deployedCards = new List<CardController>();
+    private int currentFearPoints;
+
+    // --- ИГРОВОЙ ЦИКЛ ---
+    [Header("Игровой Цикл")]
+    [Tooltip("Текущий номер раунда (0 - до начала игры, 1 - первый раунд, и т.д.)")]
+    public int currentRound = 0; // Инициализируем с 0
+
+    // --- UI REFERENCES ---
+    [Header("Ссылки UI")]
+    public TextMeshProUGUI fearPointsText;
+
+    // --- Списки карт на поле ---
+    private List<CardController> playerFieldCards = new List<CardController>();
+    private List<CardController> enemyFieldCards = new List<CardController>();
 
     private void Awake()
     {
-        // Установка Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -43,176 +49,123 @@ public class BattleManager : MonoBehaviour
 
     private void Start()
     {
-        // Предполагается, что GameManager вызывает StartGame()
-        // StartGame(); 
+        // Start Game должен вызываться либо тут, либо из GameManager для запуска первого раунда.
+        // Мы полагаемся на то, что GameManager.StartGame() вызовет BattleManager.StartGame().
+        // Если нет внешнего вызова, раскомментируйте: StartGame();
     }
 
-    public void StartGame()
-    {
-        // Инициализация FP: В начале игры игрок получает 1 ОС.
-        playerFearPoints = 1;
-        enemyFearPoints = 1;
+    // --- МЕТОДЫ УПРАВЛЕНИЯ FP ---
 
-        // Обновление UI FP (если есть)
-        // if (FPDisplay.Instance != null)
-        //     FPDisplay.Instance.UpdatePlayerFP(playerFearPoints);
-
-        StartRound();
-    }
-
-    // Запускает новый раунд, обновляя FP и Инициативу
-    public void StartRound()
-    {
-        currentRound++;
-
-        // Механика FP: В начале каждого нового раунда FP увеличивается на 1.
-        int maxFearPoints = currentRound;
-
-        playerFearPoints = maxFearPoints;
-        enemyFearPoints = maxFearPoints;
-
-        // Обновление UI FP
-        // if (FPDisplay.Instance != null)
-        //     FPDisplay.Instance.UpdatePlayerFP(playerFearPoints);
-
-        Debug.Log($"--- Начат Раунд {currentRound} ---");
-        Debug.Log($"FP игрока/врага восстановлено до: {playerFearPoints}");
-
-        DetermineInitiative();
-
-        // Здесь можно добавить вызов HandManager.Instance.DrawCard()
-        // PlayerController.Instance.DrawCard();
-    }
-
-    private void DetermineInitiative()
-    {
-        // Механика Инициативы: Чередование ходов
-        if (currentRound % 2 != 0) // Нечетные раунды
-        {
-            initiativeHolder = PlayerType.Player;
-        }
-        else // Четные раунды
-        {
-            initiativeHolder = PlayerType.Enemy;
-        }
-
-        Debug.Log($"Инициатива (ходит первым) в Раунде {currentRound} принадлежит: {initiativeHolder}");
-    }
-
-    // --- УПРАВЛЕНИЕ РЕСУРСАМИ (FP) ---
-
-    // Вызывается из CardController для проверки и расхода FP
     public bool TrySpendFearPoints(PlayerType player, int cost)
     {
-        int currentFP = (player == PlayerType.Player) ? playerFearPoints : enemyFearPoints;
-
-        if (currentFP >= cost)
+        if (player == PlayerType.Player)
         {
-            if (player == PlayerType.Player)
+            if (currentFearPoints >= cost)
             {
-                playerFearPoints -= cost;
-                // Обновление UI FP
-                // if (FPDisplay.Instance != null)
-                //     FPDisplay.Instance.UpdatePlayerFP(playerFearPoints);
-                Debug.Log($"Игрок потратил {cost} ОС. Осталось: {playerFearPoints}");
+                currentFearPoints -= cost;
+                UpdateFearPointsUI();
+                return true;
             }
-            else
-            {
-                enemyFearPoints -= cost;
-            }
-            return true;
+            Debug.Log($"[BM] Недостаточно FP. Нужно: {cost}, доступно: {currentFearPoints}");
+            return false;
         }
-        return false;
+        return true;
     }
 
-    // --- УПРАВЛЕНИЕ КАРТАМИ НА ПОЛЕ (РЕШЕНИЕ ОШИБКИ CS1061) ---
+    public void UpdateFearPointsUI()
+    {
+        if (fearPointsText != null)
+        {
+            fearPointsText.text = $"FP: {currentFearPoints}/{maxFearPoints}";
+        }
+        else
+        {
+            Debug.LogError("[BM] Поле fearPointsText не назначено в Инспекторе!");
+        }
+    }
+
+    // --- МЕТОДЫ ИГРОВОГО ЦИКЛА ---
 
     /// <summary>
-    /// Регистрирует карту, выставленную на поле, для участия в фазе боя.
-    /// Вызывается из CardController.OnEndDrag после успешного розыгрыша.
+    /// Инициализирует игру. Вызывается GameManager (или Start()).
     /// </summary>
+    public void StartGame()
+    {
+        // Устанавливает состояние, чтобы первый EndTurn перевел нас в Раунд 1 с 1 FP.
+        currentRound = 0;
+        maxFearPoints = 0;
+        currentFearPoints = 0;
+
+        // Первый EndTurn фактически инициирует первый ход, когда игрок готов.
+        EndTurn();
+
+        Debug.Log("[BM] Игра запущена! Подготовка завершена.");
+    }
+
+    /// <summary>
+    /// Вызывается кнопкой "End Turn". Завершает текущий ход игрока и начинает новый.
+    /// </summary>
+    public void EndTurn()
+    {
+        Debug.Log("--- Игрок завершает ход. Запуск фазы боя... ---");
+
+        // 1. Вызов фазы боя
+        ExecuteCombatPhase();
+
+        // 2. Инкремент раунда
+        currentRound++;
+
+        // 3. Расчет нового максимального FP
+        // FP = min(Текущий Раунд, Максимальный Лимит 10)
+        maxFearPoints = Mathf.Min(currentRound, FP_CAP);
+
+        // 4. Восстановление FP
+        currentFearPoints = maxFearPoints;
+
+        // 5. Обновление UI
+        UpdateFearPointsUI();
+
+        // 6. Добор карты
+        if (HandManager.Instance != null)
+        {
+            HandManager.Instance.DrawCard();
+        }
+
+        Debug.Log($"--- Начат Раунд {currentRound}. Доступно FP: {maxFearPoints}. ---");
+    }
+
+    private void ExecuteCombatPhase()
+    {
+        // Здесь будет логика атаки карт.
+        Debug.Log("--- ФАЗА БОЯ ЗАВЕРШЕНА. ---");
+    }
+
+    // --- МЕТОДЫ УПРАВЛЕНИЯ КАРТАМИ НА ПОЛЕ ---
+
     public void RegisterCardDeployment(CardController card, PlayerType player)
     {
-        if (!deployedCards.Contains(card))
+        if (player == PlayerType.Player)
         {
-            deployedCards.Add(card);
-            // Если вы не передаете player, то вам нужно определить его через slot.isEnemySlot
-            Debug.Log($"Карта {card.data.displayName} зарегистрирована для боя.");
+            playerFieldCards.Add(card);
         }
+        else
+        {
+            enemyFieldCards.Add(card);
+        }
+        Debug.Log($"Карта {card.data.displayName} выставлена на поле игроком {player}.");
     }
 
-    /// <summary>
-    /// Удаляет карту из списка при ее уничтожении. Вызывается CardController.Die().
-    /// </summary>
     public void DeregisterCard(CardController card)
     {
-        if (deployedCards.Remove(card))
+        if (playerFieldCards.Contains(card))
         {
-            Debug.Log($"Карта {card.data.displayName} удалена из списка боя.");
+            playerFieldCards.Remove(card);
+            // ... логика уничтожения объекта
+        }
+        else if (enemyFieldCards.Contains(card))
+        {
+            enemyFieldCards.Remove(card);
+            // ... логика уничтожения объекта
         }
     }
-
-    // --- ФАЗА БОЯ ---
-
-    /// <summary>
-    /// Сортирует карты по инициативе класса, затем по инициативе раунда.
-    /// </summary>
-    private List<CardController> GetCombatOrder()
-    {
-        var combatants = deployedCards
-            .Where(c => c != null && c.currentHP > 0)
-            .ToList();
-
-        // Сортировка по ТЗ:
-        // 1. По Инициативе Класса (CardClass Enum value)
-        // 2. По Инициативе Раунда (initiativeHolder)
-        var sortedOrder = combatants
-            .OrderBy(c => c.data.cardClass) // Сортировка по CardClass (0 - highest, 4 - lowest)
-            .ThenBy(c => GetPlayerType(c) == initiativeHolder ? 0 : 1) // Tie-breaker: ходивший первым атакует первым
-            .ToList();
-
-        return sortedOrder;
-    }
-
-    // Вспомогательный метод для определения игрока по карте
-    private PlayerType GetPlayerType(CardController card)
-    {
-        // Предполагаем, что SlotController знает, чья это сторона
-        return card.currentSlot != null && card.currentSlot.isEnemySlot ? PlayerType.Enemy : PlayerType.Player;
-    }
-
-    // *** ФУНКЦИЯ-ОБЕРТКА ДЛЯ КНОПКИ UI ***
-    public void EndTurnPlayer()
-    {
-        EndTurn(PlayerType.Player);
-    }
-
-    public void EndTurn(PlayerType player)
-    {
-        Debug.Log($"{player} закончил свою фазу розыгрыша.");
-
-        // После того, как оба игрока закончили выставление:
-        // (Для MVP мы сразу переходим к бою после хода игрока)
-        StartCombatPhase();
-    }
-
-    public void StartCombatPhase()
-    {
-        Debug.Log("--- ФАЗА БОЯ (ЗАПУЩЕНА) ---");
-
-        List<CardController> order = GetCombatOrder();
-
-        foreach (var attacker in order)
-        {
-            // --- СЮДА ПОЙДЕТ ЛОГИКА PROCESSATTACK(attacker) ---
-            Debug.Log($"Атакует: {attacker.data.displayName} ({attacker.data.cardClass})");
-        }
-
-        // Очистка мертвых карт и переход к следующему раунду
-        deployedCards.RemoveAll(c => c.currentHP <= 0);
-
-        StartRound();
-    }
-
-    // public void EndGame(PlayerController loser) { ... }
 }

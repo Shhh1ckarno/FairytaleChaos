@@ -1,22 +1,25 @@
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI; // Для работы с Image, если используете UI
+using TMPro; // Для работы с трехмерным текстом (TextMeshPro)
+using UnityEngine.UI; // Оставлено на случай, если background или artwork являются UI-изображениями
 
 // CardDisplay отвечает только за визуальное представление карты и ее данных.
-// Он НЕ ДОЛЖЕН хранить CardData или текущее HP.
 public class CardDisplay : MonoBehaviour
 {
     // --- Ссылки UI, которые нужно перетащить в Инспекторе ---
 
     [Header("Базовые данные")]
-    public TextMeshProUGUI nameText;
-    public TextMeshProUGUI descriptionText;
-    public SpriteRenderer artworkImage; // Используйте Image, если это UI Canvas
+    // КРИТИЧНО: Используем TextMeshPro, если текст трехмерный в мировом пространстве
+    public TextMeshPro nameText;
+    public TextMeshPro descriptionText;
+
+    // Artwork может быть как SpriteRenderer (для 3D), так и Image (для UI Canvas)
+    public SpriteRenderer artworkImage;
 
     [Header("Статистики")]
-    public TextMeshProUGUI attackText;
-    public TextMeshProUGUI hpText;
-    public TextMeshProUGUI costText;
+    // КРИТИЧНО: Используем TextMeshPro
+    public TextMeshPro attackText;
+    public TextMeshPro hpText;
+    public TextMeshPro costText;
 
     // --- МЕТОДЫ ОТОБРАЖЕНИЯ ---
 
@@ -31,18 +34,18 @@ public class CardDisplay : MonoBehaviour
             return;
         }
 
+        // --- Базовые данные ---
         if (nameText != null)
             nameText.text = data.displayName;
 
-        // *** Устранение ошибки CS1061: Требует наличия поля 'description' в CardData.cs ***
         if (descriptionText != null)
             descriptionText.text = data.description;
 
-        // *** Устранение ошибки CS1061: Требует наличия поля 'artwork' в CardData.cs ***
         if (artworkImage != null)
             artworkImage.sprite = data.artwork;
 
-        // Инициализация статичных чисел
+        // --- Статистики ---
+        // Инициализация статичных чисел (Attack и Cost)
         if (attackText != null)
             attackText.text = data.attack.ToString();
 
@@ -50,6 +53,8 @@ public class CardDisplay : MonoBehaviour
             costText.text = data.costFear.ToString();
 
         // Инициализация HP (используем maxHP для начала)
+        // CardController позаботится о том, чтобы вызвать это после инициализации HP.
+        // Здесь мы можем использовать maxHP, чтобы гарантировать отображение числа.
         UpdateHPText(data.maxHP);
     }
 
@@ -63,7 +68,4 @@ public class CardDisplay : MonoBehaviour
             hpText.text = newHP.ToString();
         }
     }
-
-    // Удаляем все поля Start(), currentAttack, currentHP, и SetStats(), 
-    // так как они дублируют логику CardController.
 }
