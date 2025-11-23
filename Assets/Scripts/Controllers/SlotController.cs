@@ -5,12 +5,21 @@ public class SlotController : MonoBehaviour
 {
     // --- ДАННЫЕ СЛОТА ---
 
+    [Header("Базовые Свойства")]
     [Tooltip("Принадлежит ли этот слот игроку-противнику.")]
     public bool isEnemySlot = false;
 
-    // Ссылка на слот противника, находящийся напротив (для механики боя)
-    [Tooltip("Слот, который находится напротив этого слота.")]
+    // Ссылка на слот противника, находящийся напротив (для механики стандартного боя)
+    [Tooltip("Слот, который находится напротив этого слота (на другой стороне поля).")]
     public SlotController opponentSlot;
+
+    [Header("Свойства Линии и Перемещение")]
+    [Tooltip("Является ли этот слот передней линией? (false = задняя линия)")]
+    public bool isFrontLine = true;
+
+    // НОВОЕ ПОЛЕ: Критично для перемещения и поддержки (Кальцифер)
+    [Tooltip("Ссылка на слот передней линии в нашей дорожке (только если это задний слот).")]
+    public SlotController forwardSlot;
 
     // Ссылка на карту, которая сейчас занимает этот слот
     private CardController occupant;
@@ -27,27 +36,26 @@ public class SlotController : MonoBehaviour
 
     /// <summary>
     /// Устанавливает карту в этот слот и позиционирует ее.
-    /// Вызывается из CardController после успешного розыгрыша.
+    /// Вызывается из CardController после успешного розыгрыша И в фазе Перемещения.
     /// </summary>
     public void SetOccupant(CardController card)
     {
         occupant = card;
 
+        // Обновляем текущий слот в самой карте
+        card.currentSlot = this;
+
         // 1. Устанавливаем слот как родительский объект карты
-        // Это необходимо, чтобы localPosition и localRotation работали корректно.
         card.transform.SetParent(this.transform);
 
         // 2. Сброс локальной позиции
         // Позиция (0, 0, 0) в локальном пространстве слота - это его центр.
         card.transform.localPosition = Vector3.zero;
 
-        // 3. Сброс локального вращения
-        // Quaternion.identity (0, 0, 0) сбрасывает вращение, заставляя карту лечь ровно
-        // (лицом вверх, параллельно слоту), независимо от ее вращения в руке.
-        card.transform.localRotation = Quaternion.identity;
-
-        // ИЛИ: Если вам нужно, чтобы карты на поле имели фиксированное вращение (например, 180 градусов):
-        card.transform.localRotation = Quaternion.Euler(0, 90, 0); 
+        // 3. Установка локального вращения (коррекция для поля)
+        // Вы можете настроить это значение, чтобы карта смотрела правильно.
+        // Quaternion.Euler(0, 90, 0) - это пример для вертикально расположенной карты.
+        card.transform.localRotation = Quaternion.Euler(0, 90, 0);
     }
 
     /// <summary>

@@ -1,10 +1,9 @@
 using UnityEngine;
 
-// 1. ПЕРЕМЕЩЕН АТРИБУТ: Атрибут убран отсюда, так как это enum.
+// 1. Enum CardClass (для инициативы и уязвимости)
 public enum CardClass
 {
     // Порядок в Enum определяет порядок инициативы в бою (от высшего к низшему приоритету)
-    // 0. Стихийные = Highest Priority
     Elemental = 0, // Стихийный
     Glass = 1,     // Стеклянный
     Wood = 2,      // Деревянный
@@ -12,7 +11,18 @@ public enum CardClass
     Plush = 4      // Плюшевый = Lowest Priority
 }
 
-// 2. ПРАВИЛЬНОЕ РАСПОЛОЖЕНИЕ: Атрибут [CreateAssetMenu] должен быть над классом ScriptableObject.
+// 2. Enum AttackPattern (должен находиться в отдельном файле, но для целостности привожу его здесь)
+/*
+public enum AttackPattern
+{
+    StandardFront = 0,      // Винни-Пух
+    FlexibleFront = 1,      // Буратино
+    TargetThroughLine = 2,  // Мальвина
+    SupportOnly = 99        // Кальцифер
+}
+*/
+// Предполагается, что AttackPattern находится в своем файле и доступен.
+
 [CreateAssetMenu(fileName = "New Card", menuName = "Card Game/Card Data")]
 public class CardData : ScriptableObject
 {
@@ -20,6 +30,11 @@ public class CardData : ScriptableObject
     [Header("Игровые Механики")]
     [Tooltip("Класс карты, определяет инициативу и уязвимость.")]
     public CardClass cardClass; // Используем enum CardClass
+
+    // НОВОЕ: Определение поведения карты в фазе боя (перемещение, атака, поддержка)
+    [Tooltip("Определяет, как карта выбирает цель, двигается и оказывает поддержку.")]
+    public AttackPattern attackPattern;
+
 
     // --- ИДЕНТИФИКАЦИЯ И ВИЗУАЛ ---
     [Header("Идентификация и Визуал")]
@@ -39,6 +54,7 @@ public class CardData : ScriptableObject
     [Tooltip("Префаб GameObject, который должен быть создан для этой карты.")]
     public GameObject prefab;
 
+
     // --- СТАТИСТИКИ ---
 
     [Header("Статистики")]
@@ -50,4 +66,9 @@ public class CardData : ScriptableObject
 
     [Tooltip("Максимальное здоровье существа")]
     public int maxHP;
+
+    // --- Параметры Поддержки (Опционально для Кальцифера) ---
+    [Header("Параметры Поддержки (если SupportOnly)")]
+    [Tooltip("Модификатор лечения, если карта является саппортом (Heal +X).")]
+    public int supportHealAmount = 0;
 }

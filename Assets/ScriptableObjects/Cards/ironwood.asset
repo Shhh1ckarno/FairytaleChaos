@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 425d88a99c5e4994d8a9226e81986e1e, type: 3}
   m_Name: ironwood
   m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardClass: 3
+  attackPattern: 0
   id: 0
   displayName: "\u0416\u0435\u043B\u0435\u0437\u043D\u044B\u0439 \u0414\u0440\u043E\u0432\u043E\u0441\u0435\u043A"
   description: 
@@ -20,3 +22,4 @@ MonoBehaviour:
   costFear: 5
   attack: 6
   maxHP: 4
+  supportHealAmount: 0

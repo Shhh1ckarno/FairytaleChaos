@@ -1,40 +1,47 @@
 using UnityEngine;
-using TMPro; // Для работы с трехмерным текстом (TextMeshPro)
-using UnityEngine.UI; // Оставлено на случай, если background или artwork являются UI-изображениями
+using TMPro; // Required for TextMeshPro
 
-// CardDisplay отвечает только за визуальное представление карты и ее данных.
+// CardDisplay is responsible ONLY for the visual representation of the card.
 public class CardDisplay : MonoBehaviour
 {
-    // --- Ссылки UI, которые нужно перетащить в Инспекторе ---
+    // --- UI References (Drag & Drop in Inspector) ---
 
-    [Header("Базовые данные")]
-    // КРИТИЧНО: Используем TextMeshPro, если текст трехмерный в мировом пространстве
+    [Header("Basic Data")]
+    // Using TextMeshPro for 3D text in world space
     public TextMeshPro nameText;
     public TextMeshPro descriptionText;
 
-    // Artwork может быть как SpriteRenderer (для 3D), так и Image (для UI Canvas)
+    // Artwork can be SpriteRenderer (3D) or Image (UI Canvas)
     public SpriteRenderer artworkImage;
 
-    [Header("Статистики")]
-    // КРИТИЧНО: Используем TextMeshPro
+    [Header("Stats")]
     public TextMeshPro attackText;
     public TextMeshPro hpText;
     public TextMeshPro costText;
 
-    // --- МЕТОДЫ ОТОБРАЖЕНИЯ ---
+    [Header("Status Indicators")]
+    // NEW: Text element to show buffs/debuffs (e.g., "BLOCK", "ON FIRE")
+    public TextMeshPro statusText;
+
+    // Internal reference to current data
+    private CardData currentData;
+
+    // --- DISPLAY METHODS ---
 
     /// <summary>
-    /// Инициализирует все визуальные элементы карты (Вызывается HandManager).
+    /// Initializes all visual elements of the card (Called by CardController).
     /// </summary>
     public void DisplayCardData(CardData data)
     {
+        currentData = data;
+
         if (data == null)
         {
-            Debug.LogError("Попытка отобразить CardData, которая равна null.");
+            Debug.LogError("Attempted to display null CardData.");
             return;
         }
 
-        // --- Базовые данные ---
+        // --- Basic Data ---
         if (nameText != null)
             nameText.text = data.displayName;
 
@@ -44,28 +51,67 @@ public class CardDisplay : MonoBehaviour
         if (artworkImage != null)
             artworkImage.sprite = data.artwork;
 
-        // --- Статистики ---
-        // Инициализация статичных чисел (Attack и Cost)
+        // --- Stats ---
         if (attackText != null)
             attackText.text = data.attack.ToString();
 
         if (costText != null)
             costText.text = data.costFear.ToString();
 
-        // Инициализация HP (используем maxHP для начала)
-        // CardController позаботится о том, чтобы вызвать это после инициализации HP.
-        // Здесь мы можем использовать maxHP, чтобы гарантировать отображение числа.
+        // Initialize HP using maxHP
         UpdateHPText(data.maxHP);
+
+        // Hide status text initially
+        if (statusText != null)
+        {
+            statusText.text = "";
+            statusText.gameObject.SetActive(false);
+        }
     }
 
     /// <summary>
-    /// Динамически обновляет отображаемый текст здоровья карты (Вызывается CardController при получении урона).
+    /// Dynamically updates the HP text.
     /// </summary>
     public void UpdateHPText(int newHP)
     {
         if (hpText != null)
         {
             hpText.text = newHP.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Dynamically updates the Attack text (e.g., if buffed by Fire).
+    /// </summary>
+    public void UpdateAttackText(int newAttack)
+    {
+        if (attackText != null)
+        {
+            attackText.text = newAttack.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Updates the status indicator text.
+    /// </summary>
+    /// <param name="status">The text to display (e.g. "BLOCK").</param>
+    /// <param name="isActive">Whether to show or hide the text.</param>
+    public void UpdateStatusText(string status, bool isActive)
+    {
+        if (statusText != null)
+        {
+            statusText.text = status;
+            statusText.gameObject.SetActive(isActive);
+
+            // Optional: Color coding
+            if (status.Contains("ПОДЖОГ")) // IGNITION
+                statusText.color = Color.red;
+            else if (status.Contains("ЗАКАЛКА")) // TEMPERING
+                statusText.color = Color.cyan;
+            else if (status.Contains("ПЕРЕПЛАВКА")) // REBIRTH
+                statusText.color = Color.yellow;
+            else
+                statusText.color = Color.white;
         }
     }
 }

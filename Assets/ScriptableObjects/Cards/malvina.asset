@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 425d88a99c5e4994d8a9226e81986e1e, type: 3}
   m_Name: malvina
   m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardClass: 1
+  attackPattern: 2
   id: 0
   displayName: "\u041C\u0430\u043B\u044C\u0432\u0438\u043D\u0430"
   description: 
@@ -20,3 +22,4 @@ MonoBehaviour:
   costFear: 2
   attack: 2
   maxHP: 2
+  supportHealAmount: 0

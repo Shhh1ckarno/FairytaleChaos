@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-// Этот класс управляет картами в руке игрока, их расположением и количеством.
 public class HandManager : MonoBehaviour
 {
     // --- СТАТИЧЕСКИЙ СИНГЛТОН ---
@@ -14,9 +13,8 @@ public class HandManager : MonoBehaviour
     // --- Настройки руки ---
     [Header("Настройки Руки")]
     [Tooltip("Объект, который является родительским для карт в руке")]
-    public Transform handRoot; // Назначается в Инспекторе
+    public Transform handRoot; // Назначьте объект-контейнер!
 
-    // ВАЖНО: Это ЛОКАЛЬНОЕ смещение центральной точки
     [Tooltip("Начальная ЛОКАЛЬНАЯ позиция (смещение от центра HandRoot)")]
     public Vector3 startPosition = new Vector3(0f, 0, 0);
 
@@ -46,7 +44,6 @@ public class HandManager : MonoBehaviour
 
     private void Start()
     {
-        // Получаем ссылку на CardManager
         if (CardManager.Instance != null)
         {
             cardManager = CardManager.Instance;
@@ -54,17 +51,24 @@ public class HandManager : MonoBehaviour
 
         if (handRoot == null)
         {
+            // Если root не назначен, используем сам HandManager
             handRoot = transform;
         }
 
         if (cardManager != null)
         {
-            cardManager.BuildDeck();
+            // Вызываем стартовый добор
             DrawStartingHand();
+        }
+        else
+        {
+            Debug.LogError("[HM] CardManager не найден! Невозможно начать добор карт.");
         }
     }
 
-    // --- МЕТОДЫ УПРАВЛЕНИЯ РУКОЙ (Оставлены без изменений) ---
+    // ========================================================================================
+    //                                ЛОГИКА ДОБОРА И УДАЛЕНИЯ
+    // ========================================================================================
 
     public void DrawStartingHand()
     {
@@ -74,31 +78,48 @@ public class HandManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Добирает одну карту из колоды, создает ее и помещает в руку.
+    /// </summary>
     public void DrawCard()
     {
         if (handCards.Count >= maxHandSize || cardManager == null) return;
 
         CardData cardData = cardManager.DrawTop();
-        if (cardData == null || cardData.prefab == null) return;
 
+        if (cardData == null) return;
+
+        if (cardData.prefab == null)
+        {
+            Debug.LogError($"[HM] В CardData '{cardData.displayName}' не назначен префаб! Карту невозможно создать.");
+            return;
+        }
+
+        // 1. СОЗДАНИЕ И УСТАНОВКА РОДИТЕЛЯ
+        // Карта создается как дочерний объект handRoot (это критично для локальных позиций)
         GameObject newCardObject = Instantiate(cardData.prefab, handRoot);
+
         CardController cardController = newCardObject.GetComponent<CardController>();
-        CardDisplay cardDisplay = newCardObject.GetComponent<CardDisplay>();
 
         if (cardController != null)
         {
-            cardController.data = cardData;
-            if (cardDisplay != null) cardDisplay.DisplayCardData(cardData);
-
+            // 2. ИНИЦИАЛИЗАЦИЯ И ДОБАВЛЕНИЕ
+            cardController.Initialize(cardData);
             handCards.Add(cardController);
+
+            // 3. ПЕРЕРАСЧЕТ ПОЗИЦИЙ
             UpdateHandPositions();
         }
         else
         {
+            Debug.LogError($"[HM] Префаб карты {cardData.displayName} не содержит CardController!");
             Destroy(newCardObject);
         }
     }
 
+    /// <summary>
+    /// Удаляет карту из руки (вызывается CardController при розыгрыше на поле).
+    /// </summary>
     public void RemoveFromHand(CardController card)
     {
         if (handCards.Remove(card))
@@ -108,40 +129,58 @@ public class HandManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Пересчитывает и устанавливает ЛОКАЛЬНУЮ позицию каждой карты в руке.
-    /// *** ИСПОЛЬЗУЕМ ОСЬ X ДЛЯ ГОРИЗОНТАЛЬНОГО РАСПОЛОЖЕНИЯ ***
+    /// Добавляет карту обратно в руку (используется CardController при неудачном Drag & Drop).
     /// </summary>
-    private void UpdateHandPositions()
+    public void AddCardBackToHand(CardController card)
+    {
+        if (!handCards.Contains(card))
+        {
+            handCards.Add(card);
+            // UpdateHandPositions() будет вызван CardController в OnEndDrag, 
+            // но мы можем вызвать его и здесь для страховки.
+            // UpdateHandPositions(); 
+        }
+    }
+
+    /// <summary>
+    /// Проверяет, находится ли карта в списке (используется CardController).
+    /// </summary>
+    public bool HandContains(CardController card)
+    {
+        return handCards.Contains(card);
+    }
+
+    // ========================================================================================
+    //                                ЛОГИКА ПОЗИЦИОНИРОВАНИЯ
+    // ========================================================================================
+
+    /// <summary>
+    /// Пересчитывает и устанавливает ЛОКАЛЬНУЮ позицию каждой карты в руке.
+    /// Считает, что карты расположены горизонтально по оси Z.
+    /// </summary>
+    public void UpdateHandPositions()
     {
         int count = handCards.Count;
         if (count == 0) return;
 
+        // Определяем общую ширину руки
         float totalWidth = (count - 1) * cardSpacing;
 
-        // currentOffset: Смещение, которое мы будем применять к горизонтальной оси (X)
-        float currentOffset = startPosition.x - (totalWidth / 2f);
+        // Вычисляем начальную точку для первой карты, чтобы центрировать руку
+        float currentOffset = startPosition.z - (totalWidth / 2f);
 
         for (int i = 0; i < count; i++)
         {
             CardController card = handCards[i];
 
-            // 1. ПРЕДПОЛАГАЕМ, что горизонтальное смещение должно быть по оси X
-            // Это стандартное поведение для объектов, которые не повернуты.
-            //Vector3 targetPosition = new Vector3(
-            //    currentOffset,     // X: Горизонтальное смещение
-            //    startPosition.y,   // Y: Вертикальное смещение (постоянное)
-            //    startPosition.z    // Z: Глубина (постоянная)
-            //);
-
-            // Если карты все еще идут вглубь (по оси Z),
-            // ЗАМЕНИТЕ:
+            // Создаем целевую ЛОКАЛЬНУЮ позицию
             Vector3 targetPosition = new Vector3(
-                startPosition.x,   // X: Постоянное
-                startPosition.y,   // Y: Постоянное
-                currentOffset      // Z: Горизонтальное смещение
+                startPosition.x,    // X: Постоянное
+                startPosition.y,    // Y: Постоянное
+                currentOffset       // Z: Горизонтальное смещение
             );
-            
 
+            // Вызываем CardController для установки позиции
             card.SetHandPosition(targetPosition);
 
             currentOffset += cardSpacing;

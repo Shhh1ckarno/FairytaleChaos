@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 425d88a99c5e4994d8a9226e81986e1e, type: 3}
   m_Name: calcifer
   m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardClass: 0
+  attackPattern: 99
   id: 0
   displayName: "\u041A\u0430\u043B\u044C\u0446\u0438\u0444\u0435\u0440"
   description: 
@@ -20,3 +22,4 @@ MonoBehaviour:
   costFear: 1
   attack: 0
   maxHP: 2
+  supportHealAmount: 2

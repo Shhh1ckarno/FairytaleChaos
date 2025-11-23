@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 425d88a99c5e4994d8a9226e81986e1e, type: 3}
   m_Name: buratino
   m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardClass: 2
+  attackPattern: 1
   id: 0
   displayName: "\u0411\u0443\u0440\u0430\u0442\u0438\u043D\u043E"
   description: 
@@ -20,3 +22,4 @@ MonoBehaviour:
   costFear: 3
   attack: 4
   maxHP: 3
+  supportHealAmount: 0
