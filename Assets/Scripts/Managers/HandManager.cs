@@ -25,7 +25,7 @@ public class HandManager : MonoBehaviour
     public int maxHandSize = 10;
 
     [Tooltip("Количество карт для начальной раздачи")]
-    public int startingHandSize = 4;
+    public int startingHandSize = 5;
 
     // Список всех карт, которые в настоящее время находятся в руке
     private List<CardController> handCards = new List<CardController>();
@@ -51,14 +51,13 @@ public class HandManager : MonoBehaviour
 
         if (handRoot == null)
         {
-            // Если root не назначен, используем сам HandManager
             handRoot = transform;
         }
 
         if (cardManager != null)
         {
-            // Вызываем стартовый добор
-            DrawStartingHand();
+            // !!! ИСПРАВЛЕНИЕ: УДАЛИТЬ ЭТОТ ВЫЗОВ !!!
+            // DrawStartingHand();
         }
         else
         {

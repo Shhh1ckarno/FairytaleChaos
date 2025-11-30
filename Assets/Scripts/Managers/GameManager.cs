@@ -10,14 +10,10 @@ public class GameManager : MonoBehaviour
     // --- ССЫЛКИ НА МЕНЕДЖЕРЫ (Назначаются в Инспекторе) ---
     [Header("Менеджеры")]
     [Tooltip("Ссылка на HandManager. Должна быть назначена!")]
-    public HandManager handManager; // Строка 79 (была HandManager не назначен)
+    public HandManager handManager;
 
     [Tooltip("Ссылка на BattleManager. Должна быть назначена!")]
-    public BattleManager battleManager; // Строка 84 (была BattleManager не назначен)
-
-    // Вы можете добавить другие менеджеры, например:
-    // public CardManager cardManager; 
-    // public UIManager uiManager;
+    public BattleManager battleManager;
 
     private void Awake()
     {
@@ -25,7 +21,7 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Если вы хотите, чтобы менеджер существовал между сценами
+            // DontDestroyOnLoad(gameObject); // Используйте, если нужно
         }
         else
         {
@@ -33,7 +29,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Start() // Строка 38
+    private void Start()
     {
         Debug.Log("GameManager: Запуск игры...");
         InitializeGame();
@@ -42,7 +38,7 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Инициализирует все системы игры.
     /// </summary>
-    public void InitializeGame() // Строка 51
+    public void InitializeGame()
     {
         // 1. Проверяем, назначены ли все менеджеры в Инспекторе
         if (!VerifyManagers())
@@ -53,19 +49,27 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("GameManager: Все менеджеры назначены. Запускаем инициализацию...");
 
-        // 2. Инициализация HandManager (Раздача стартовой руки)
+        // 2. Инициализация HandManager (БЕЗ ДОБОРА!)
+        // Добор стартовой руки теперь полностью обрабатывается BattleManager.StartGame().
+        // *********************************************************************************
+        // !!! ИСПРАВЛЕНИЕ: УДАЛЕН ВЫЗОВ handManager.DrawStartingHand() !!!
+        // *********************************************************************************
         if (handManager != null)
         {
-            // Здесь мы вызываем DrawStartingHand(), который запускает создание карт.
-            handManager.DrawStartingHand(); // Строка 59
-            Debug.Log("GameManager: Стартовая рука успешно сформирована.");
+            // Здесь можно выполнить базовую настройку HandManager, но не добор карт.
+            // Debug.Log("GameManager: HandManager готов.");
         }
+
 
         // 3. Инициализация BattleManager (Начало первого раунда, ресурсов и т.д.)
         if (battleManager != null)
         {
+            // BattleManager.StartGame() теперь отвечает за:
+            // 1. Сброс здоровья
+            // 2. Вызов HandManager.DrawStartingHand()
+            // 3. Начало первого хода
             battleManager.StartGame();
-            Debug.Log("GameManager: Боевая система инициализирована.");
+            Debug.Log("GameManager: Боевая система инициализирована и игра началась.");
         }
 
         // 4. Загрузка/инициализация UI (если есть UIManager)
@@ -77,23 +81,21 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Проверяет, что все необходимые ссылки на менеджеры назначены.
     /// </summary>
-    private bool VerifyManagers() // Строка 79
+    private bool VerifyManagers()
     {
         bool success = true;
 
-        if (handManager == null) // Строка 80
+        if (handManager == null)
         {
             Debug.LogError("GameManager: HandManager не назначен в Инспекторе!");
             success = false;
         }
 
-        if (battleManager == null) // Строка 84
+        if (battleManager == null)
         {
             Debug.LogError("GameManager: BattleManager не назначен в Инспекторе!");
             success = false;
         }
-
-        // Добавьте проверки для других менеджеров здесь...
 
         return success;
     }

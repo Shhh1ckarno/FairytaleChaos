@@ -62,10 +62,24 @@ public class BattleManager : MonoBehaviour
     {
         currentRound = 0;
         maxFearPoints = 0;
+        currentFearPoints = 0; // Äîáàâèì îáíóëåíèå FP
 
-        // Ñáğîñ çäîğîâüÿ ÷åğåç ìåíåäæåğ
+        // 1. Ñáğîñ çäîğîâüÿ
         if (HealthManager.Instance != null) HealthManager.Instance.InitializeHealth();
 
+        // 2. ÈÑÏĞÀÂËÅÍÈÅ: ÂÛÇÛÂÀÅÌ ÍÀ×ÀËÜÍÛÉ ÄÎÁÎĞ ÊÀĞÒ ÒÎËÜÊÎ ÇÄÅÑÜ!
+        if (HandManager.Instance != null)
+        {
+            // Ïğåäïîëàãàåòñÿ, ÷òî HandManager.DrawStartingHand() äîáèğàåò 4 êàğòû.
+            HandManager.Instance.DrawStartingHand();
+        }
+
+        // 3. Îáíóëåíèå ïîëåé
+        playerFieldCards.Clear();
+        enemyFieldCards.Clear();
+        UpdateFearPointsUI();
+
+        // 4. Íà÷àëî ïåğâîãî õîäà
         StartTurn(PlayerType.Player);
         Debug.Log("[BM] Èãğà çàïóùåíà!");
     }
@@ -83,7 +97,12 @@ public class BattleManager : MonoBehaviour
 
             Debug.Log($"=== ĞÀÓÍÄ {currentRound}: ÕÎÄ ÈÃĞÎÊÀ ===");
             if (endTurnButton != null) endTurnButton.interactable = true;
-            if (HandManager.Instance != null) HandManager.Instance.DrawCard();
+
+            // ÈÑÏĞÀÂËÅÍÈÅ: ÅÆÅÕÎÄÍÛÉ ÄÎÁÎĞ ÊÀĞÒÛ ÏĞÎÈÑÕÎÄÈÒ ÒÎËÜÊÎ ÑÎ 2-ÃÎ ĞÀÓÍÄÀ
+            if (currentRound > 1 && HandManager.Instance != null)
+            {
+                HandManager.Instance.DrawCard();
+            }
         }
         else
         {
