@@ -394,7 +394,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 767142703}
         m_TargetAssemblyTypeName: BattleManager, Assembly-CSharp
-        m_MethodName: EndTurn
+        m_MethodName: OnEndTurnButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -704,9 +704,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59194d96d3fd5904ab4b5ef426dc3f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleManager
+  currentTurnOwner: 0
   maxFearPoints: 10
+  currentFearPoints: 0
   currentRound: 0
   fearPointsText: {fileID: 1710375008}
+  endTurnButton: {fileID: 0}
   playerSlots:
   - {fileID: 1967866760}
   - {fileID: 408305258}
@@ -731,6 +734,51 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.72186, y: 0, z: 0.0025000004}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &815728292
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 815728294}
+  - component: {fileID: 815728293}
+  m_Layer: 0
+  m_Name: EnemyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &815728293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 815728292}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae0d19d020a9e2b40af9d34ded44ca7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyManager
+  actionDelay: 1
+--- !u!4 &815728294
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 815728292}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.33569, y: 0.0615, z: -0.01602}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2136,3 +2184,4 @@ SceneRoots:
   - {fileID: 767142704}
   - {fileID: 1610438498}
   - {fileID: 1742426431}
+  - {fileID: 815728294}

@@ -19,6 +19,9 @@ public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHand
 
     [HideInInspector] public SlotController currentSlot; // The slot this card occupies
 
+    [HideInInspector] // Скрываем в Инспекторе, т.к. устанавливается кодом
+    public bool isPlayerCard = false;
+
     // --- SUPPORT FLAGS (Buffs from Calcifer etc.) ---
     [Header("Buff State")]
     [SerializeField] private bool hasBlock = false;      // Tempering (Block first damage)
@@ -122,12 +125,28 @@ public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHand
 
     public void OnPointerDown(PointerEventData eventData) { }
 
+    // CardController.cs (Добавляем проверку в OnBeginDrag)
+
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (currentSlot != null) return; // Cannot drag if already on board
+        // 1. Проверка: Если карта в слоте, двигать нельзя
+        if (currentSlot != null) return;
+
+        // 2. НОВАЯ ПРОВЕРКА: Если это карта врага, двигать нельзя!
+        // Как понять, что карта врага?
+        // Самый простой способ: если она не в руке и не в слоте, или если мы пометили её.
+
+        // Добавим простой флаг, который мы не использовали, но сейчас пригодится.
+        // Или проверим, является ли она ребенком HandRoot игрока.
+
+        if (HandManager.Instance != null && !HandManager.Instance.HandContains(this))
+        {
+            // Если карты нет в руке игрока, значит это карта врага (или она уже на столе)
+            return;
+        }
 
         isDragging = true;
-        transform.SetParent(null); // Detach from Hand
+        transform.SetParent(null);
         if (cardCollider != null) cardCollider.enabled = true;
     }
 
