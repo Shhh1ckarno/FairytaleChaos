@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     [Tooltip("Ссылка на BattleManager. Должна быть назначена!")]
     public BattleManager battleManager;
 
+    [Tooltip("Ссылка на CardManager. Должна быть назначена!")]
+    public CardManager cardManager;
+    public HealthManager healthManager;
     private void Awake()
     {
         // Установка Singleton
@@ -101,4 +104,36 @@ public class GameManager : MonoBehaviour
     }
 
     // --- Дополнительные методы управления состоянием игры (пауза, завершение) ---
+    public void RestartGame()
+    {
+        Debug.Log("---  ЗАПУСК РЕСТАРТА ИГРЫ ---");
+
+        // 1. Сброс состояния поля и карт в руке
+        if (battleManager != null)
+        {
+            battleManager.ClearFieldAndHand(); // Очистка поля, руки и сброс ресурсов BattleManager
+        }
+
+        // 2. Сброс здоровья
+        if (healthManager != null)
+        {
+            healthManager.InitializeHealth();
+        }
+
+        // 3. Сброс колоды (самый важный шаг)
+        if (cardManager != null)
+        {
+            cardManager.ResetDeckAndShuffle();
+        }
+        else
+        {
+            Debug.LogError("CardManager не назначен! Невозможно сбросить колоду.");
+            return;
+        }
+
+        // 4. Перезапуск игры
+        InitializeGame(); // Вызовет BattleManager.StartGame()
+
+        Debug.Log("---  РЕСТАРТ ЗАВЕРШЕН ---");
+    }
 }

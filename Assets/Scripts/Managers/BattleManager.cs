@@ -346,4 +346,57 @@ public class BattleManager : MonoBehaviour
         if (playerFieldCards.Contains(card)) playerFieldCards.Remove(card);
         else if (enemyFieldCards.Contains(card)) enemyFieldCards.Remove(card);
     }
+    /// <summary>
+    /// Удаляет все карты с поля и из руки при рестарте игры.
+    /// </summary>
+    public void ClearFieldAndHand()
+    {
+        // 1. Очистка карт на поле (и уничтожение объектов)
+        var allCardsOnField = new List<CardController>(playerFieldCards.Concat(enemyFieldCards));
+
+        foreach (var card in allCardsOnField)
+        {
+            if (card != null && card.gameObject != null)
+            {
+                Destroy(card.gameObject);
+            }
+        }
+
+        playerFieldCards.Clear();
+        enemyFieldCards.Clear();
+
+        // 2. Очистка слотов
+        foreach (var slot in playerSlots.Concat(enemySlots))
+        {
+            slot.ClearOccupant(); // Предполагается, что SlotController имеет этот метод
+        }
+
+        // 3. Очистка руки
+        if (HandManager.Instance != null)
+        {
+            // HandManager должен иметь метод для очистки своей внутренней коллекции и уничтожения объектов
+            HandManager.Instance.ClearAllCards(); // Будет реализовано ниже
+        }
+
+        // 4. Сброс счетчиков
+        currentRound = 0;
+        maxFearPoints = 0;
+        currentFearPoints = 0;
+        UpdateFearPointsUI();
+
+        // 5. Сброс здоровья
+        if (HealthManager.Instance != null) HealthManager.Instance.InitializeHealth();
+
+        Debug.Log("[BM] Поле и ресурсы очищены.");
+    }
+
+    public void DisableInteractions()
+    {
+        if (endTurnButton != null)
+        {
+            endTurnButton.interactable = false;
+        }
+        // Здесь можно добавить логику, которая отключает возможность перетаскивать карты
+        Debug.Log("[BM] Взаимодействия отключены (Игра окончена).");
+    }
 }

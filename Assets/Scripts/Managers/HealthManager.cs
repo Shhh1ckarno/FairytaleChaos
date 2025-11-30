@@ -1,6 +1,6 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.SceneManagement; // Для перезагрузки сцены
+// using UnityEngine.SceneManagement; // <-- УДАЛЯЕМ, так как рестарт будет в GameManager
 
 public class HealthManager : MonoBehaviour
 {
@@ -16,8 +16,8 @@ public class HealthManager : MonoBehaviour
     [Header("UI Ссылки")]
     public TextMeshProUGUI playerHealthText;
     public TextMeshProUGUI enemyHealthText;
-    public GameObject gameOverPanel; // Панель конца игры
-    public TextMeshProUGUI winnerText; // Текст "Победа/Поражение"
+    public GameObject gameOverPanel;
+    public TextMeshProUGUI winnerText;
 
     private bool isGameOver = false;
 
@@ -27,10 +27,14 @@ public class HealthManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    // !!! ИСПРАВЛЕНИЕ: УДАЛЯЕМ ВЫЗОВ InitializeHealth() из Start() !!!
+    // Игра теперь запускается только из GameManager.InitializeGame()
+    /*
     private void Start()
     {
-        InitializeHealth();
+        InitializeHealth(); 
     }
+    */
 
     public void InitializeHealth()
     {
@@ -40,6 +44,7 @@ public class HealthManager : MonoBehaviour
 
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         UpdateHealthUI();
+        Debug.Log("[HM] Здоровье сброшено и инициализировано.");
     }
 
     public void TakeDamage(BattleManager.PlayerType victim, int damage)
@@ -67,6 +72,12 @@ public class HealthManager : MonoBehaviour
         if (enemyHealthText != null) enemyHealthText.text = $"EnemyHP: {enemyHealth}/{maxHealth}";
     }
 
+    // Метод для BattleManager, чтобы проверить состояние
+    public bool IsGameOver()
+    {
+        return isGameOver;
+    }
+
     private void CheckGameOver()
     {
         if (playerHealth <= 0) EndGame(false);
@@ -76,6 +87,7 @@ public class HealthManager : MonoBehaviour
     private void EndGame(bool playerWon)
     {
         isGameOver = true;
+
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
@@ -85,10 +97,14 @@ public class HealthManager : MonoBehaviour
                 winnerText.color = playerWon ? Color.green : Color.red;
             }
         }
+
+        // ОСТАНОВКА ИГРЫ
+        if (BattleManager.Instance != null)
+        {
+            // Отключаем кнопку End Turn и другие взаимодействия
+            BattleManager.Instance.DisableInteractions();
+        }
     }
 
-    public void RestartGame()
-    {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
+    // !!! ИСПРАВЛЕНИЕ: МЕТОД RestartGame() УДАЛЕН. Он будет в GameManager.
 }

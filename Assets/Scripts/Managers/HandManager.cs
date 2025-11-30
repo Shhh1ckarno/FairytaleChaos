@@ -185,4 +185,23 @@ public class HandManager : MonoBehaviour
             currentOffset += cardSpacing;
         }
     }
+    /// <summary>
+    /// Удаляет все карты из руки и уничтожает их GameObjects.
+    /// </summary>
+    public void ClearAllCards()
+    {
+        // 1. Уничтожаем все объекты карт в руке
+        foreach (var card in handCards)
+        {
+            if (card != null && card.gameObject != null)
+            {
+                Destroy(card.gameObject);
+            }
+        }
+
+        // 2. Очищаем список
+        handCards.Clear();
+
+        Debug.Log("[HM] Рука очищена.");
+    }
 }
