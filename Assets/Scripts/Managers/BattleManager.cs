@@ -2,12 +2,14 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine.UI;
-using System.Linq; // Нужно для работы списков
+using System.Linq;
 
 public class BattleManager : MonoBehaviour
 {
+    // --- СТАТИЧЕСКИЙ СИНГЛТОН ---
     public static BattleManager Instance;
 
+    // Перечисление для обозначения игроков
     public enum PlayerType { Player, Enemy }
 
     [Header("Настройки")]
@@ -18,8 +20,7 @@ public class BattleManager : MonoBehaviour
     public const int FP_CAP = 10;
 
     public int maxFearPoints;
-    public int currentFearPoints; // FP Игрока
-                                  // Для врага можно сделать отдельные переменные, но для простоты используем общую логику пока
+    public int currentFearPoints;
 
     // --- ИГРОВОЙ ЦИКЛ ---
     [Header("Игровой Цикл")]
@@ -28,11 +29,14 @@ public class BattleManager : MonoBehaviour
     // --- UI REFERENCES ---
     [Header("Ссылки UI")]
     public TextMeshProUGUI fearPointsText;
-    public Button endTurnButton; // Ссылка на кнопку, чтобы отключать её в ход врага
+    public Button endTurnButton;
 
     // --- Слоты Поля ---
     [Header("Слоты Поля")]
+    [Tooltip("Список слотов игрока")]
     public List<SlotController> playerSlots;
+
+    [Tooltip("Список слотов противника")]
     public List<SlotController> enemySlots;
 
     // --- Списки карт на поле ---
@@ -47,7 +51,7 @@ public class BattleManager : MonoBehaviour
 
     private void Start()
     {
-        // StartGame(); // Можно вызывать отсюда или из GameManager
+        // StartGame(); 
     }
 
     // ========================================================================================
@@ -59,7 +63,9 @@ public class BattleManager : MonoBehaviour
         currentRound = 0;
         maxFearPoints = 0;
 
-        // Начинаем первый ход с Игрока
+        // Сброс здоровья через менеджер
+        if (HealthManager.Instance != null) HealthManager.Instance.InitializeHealth();
+
         StartTurn(PlayerType.Player);
         Debug.Log("[BM] Игра запущена!");
     }
@@ -68,52 +74,25 @@ public class BattleManager : MonoBehaviour
     {
         currentTurnOwner = player;
 
-        // --- 1. ОБЩАЯ ЛОГИКА НАЧИСЛЕНИЯ РЕСУРСОВ ---
-
-        // Если ходит Игрок, значит начался абсолютно новый раунд
         if (player == PlayerType.Player)
         {
             currentRound++;
-        }
+            maxFearPoints = Mathf.Min(currentRound, FP_CAP);
+            currentFearPoints = maxFearPoints;
+            UpdateFearPointsUI();
 
-        // Рассчитываем Максимум FP на этот ход (зависит от номера раунда)
-        maxFearPoints = Mathf.Min(currentRound, FP_CAP);
-
-        // ВАЖНО: Восстанавливаем FP до максимума. 
-        // Это делается и для Игрока, и для Врага, чтобы у бота тоже был лимит!
-        currentFearPoints = maxFearPoints;
-
-        // ---------------------------------------------
-
-        if (player == PlayerType.Player)
-        {
-            // --- ХОД ИГРОКА ---
-            Debug.Log($"=== РАУНД {currentRound}: ХОД ИГРОКА (FP: {currentFearPoints}) ===");
-
-            UpdateFearPointsUI(); // Обновляем текст в UI
-
-            // Включаем кнопку конца хода
+            Debug.Log($"=== РАУНД {currentRound}: ХОД ИГРОКА ===");
             if (endTurnButton != null) endTurnButton.interactable = true;
-
-            // Добор карты игроком
             if (HandManager.Instance != null) HandManager.Instance.DrawCard();
         }
         else
         {
-            // --- ХОД ВРАГА ---
-            Debug.Log($"=== РАУНД {currentRound}: ХОД ВРАГА (FP: {currentFearPoints}) ===");
-
-            // Выключаем кнопку конца хода
+            Debug.Log($"=== РАУНД {currentRound}: ХОД ВРАГА ===");
             if (endTurnButton != null) endTurnButton.interactable = false;
-
-            // Запускаем логику бота
             if (EnemyManager.Instance != null) EnemyManager.Instance.StartEnemyTurn();
         }
     }
 
-    /// <summary>
-    /// Этот метод привязывается к UI Кнопке "Конец Хода".
-    /// </summary>
     public void OnEndTurnButton()
     {
         if (currentTurnOwner == PlayerType.Player)
@@ -122,25 +101,16 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Завершает ход указанного игрока. Вызывается кнопкой (Player) или ботом (Enemy).
-    /// </summary>
     public void EndTurn(PlayerType player)
     {
         Debug.Log($"--- {player} завершает ход. Фаза Боя... ---");
 
-        // 1. Вызов фазы боя (Атакует тот, чей ход закончился)
+        // 1. Вызов фазы боя
         ExecuteCombatPhase(player);
 
         // 2. Передача хода
-        if (player == PlayerType.Player)
-        {
-            StartTurn(PlayerType.Enemy);
-        }
-        else
-        {
-            StartTurn(PlayerType.Player);
-        }
+        if (player == PlayerType.Player) StartTurn(PlayerType.Enemy);
+        else StartTurn(PlayerType.Player);
     }
 
     // ========================================================================================
@@ -149,44 +119,24 @@ public class BattleManager : MonoBehaviour
 
     public bool TrySpendFearPoints(PlayerType player, int cost)
     {
-        // 1. Проверяем, что тот, кто тратит, владеет ходом
         if (player != currentTurnOwner) return false;
 
-        // 2. Проверяем, хватает ли очков (currentFearPoints общие для текущего хода)
         if (currentFearPoints >= cost)
         {
             currentFearPoints -= cost;
-
-            // Обновляем UI только если тратит Игрок (у врага FP скрыты)
-            if (player == PlayerType.Player)
-            {
-                UpdateFearPointsUI();
-            }
-
-            // Для отладки можно вывести в консоль
-            if (player == PlayerType.Enemy)
-            {
-                Debug.Log($"[BM] Враг потратил {cost} FP. Осталось: {currentFearPoints}");
-            }
-
+            if (player == PlayerType.Player) UpdateFearPointsUI();
+            else Debug.Log($"[BM] Враг потратил {cost} FP. Осталось: {currentFearPoints}");
             return true;
         }
 
-        // Если это враг, пишем в лог, почему он не сходил
-        if (player == PlayerType.Enemy)
-        {
-            Debug.Log($"[BM] Врагу не хватает FP на карту. Нужно {cost}, есть {currentFearPoints}");
-        }
-
+        if (player == PlayerType.Enemy) Debug.Log($"[BM] Врагу не хватает FP.");
         return false;
     }
 
     public void UpdateFearPointsUI()
     {
         if (fearPointsText != null)
-        {
             fearPointsText.text = $"FP: {currentFearPoints}/{maxFearPoints}";
-        }
     }
 
     // ========================================================================================
@@ -199,17 +149,15 @@ public class BattleManager : MonoBehaviour
 
         if (activePlayer == PlayerType.Player)
         {
-            // Атакуют карты Игрока
             PerformMovementPhase(playerFieldCards);
             PerformSupportPhase(playerFieldCards);
-            PerformAttackPhase(playerFieldCards, enemySlots);
+            PerformAttackPhase(playerFieldCards, enemySlots, PlayerType.Enemy); // Атакуем Врага
         }
         else
         {
-            // Атакуют карты Врага (Зеркально)
             PerformMovementPhase(enemyFieldCards);
             PerformSupportPhase(enemyFieldCards);
-            PerformAttackPhase(enemyFieldCards, playerSlots);
+            PerformAttackPhase(enemyFieldCards, playerSlots, PlayerType.Player); // Атакуем Игрока
         }
 
         Debug.Log("--- ФАЗА БОЯ ЗАВЕРШЕНА. ---");
@@ -221,7 +169,6 @@ public class BattleManager : MonoBehaviour
 
     private void PerformMovementPhase(List<CardController> fieldCards)
     {
-        // Создаем копию списка
         List<CardController> cardsToMove = new List<CardController>(fieldCards);
 
         foreach (CardController card in cardsToMove)
@@ -230,9 +177,7 @@ public class BattleManager : MonoBehaviour
 
             if (card.data.attackPattern == AttackPattern.SupportOnly ||
                 card.data.attackPattern == AttackPattern.TargetThroughLine)
-            {
                 continue;
-            }
 
             SlotController currentSlot = card.currentSlot;
 
@@ -260,7 +205,6 @@ public class BattleManager : MonoBehaviour
 
             if (card.data.attackPattern == AttackPattern.SupportOnly)
             {
-                // Для врага "вперед" - это тоже forwardSlot (мы должны были настроить их зеркально)
                 SlotController forwardSlot = card.currentSlot.forwardSlot;
 
                 if (forwardSlot != null && forwardSlot.IsOccupied())
@@ -284,10 +228,11 @@ public class BattleManager : MonoBehaviour
     }
 
     // ----------------------------------------------------------------------
-    //                           ФАЗА АТАКИ
+    //                           ФАЗА АТАКИ (С HEALTH MANAGER)
     // ----------------------------------------------------------------------
 
-    private void PerformAttackPhase(List<CardController> fieldCards, List<SlotController> opponentSlots)
+    // Добавил аргумент defenderType, чтобы знать, чью базу атаковать
+    private void PerformAttackPhase(List<CardController> fieldCards, List<SlotController> opponentSlots, PlayerType defenderType)
     {
         List<CardController> attackers = new List<CardController>(fieldCards);
 
@@ -306,8 +251,14 @@ public class BattleManager : MonoBehaviour
             }
             else
             {
-                Debug.Log($"{attackingCard.data.displayName} атакует базу.");
-                // HealthManager.Instance.TakeDamage(...)
+                // !!! ИНТЕГРАЦИЯ HEALTH MANAGER !!!
+                int damage = attackingCard.GetTotalAttack();
+                Debug.Log($"{attackingCard.data.displayName} атакует БАЗУ ({defenderType}) на {damage} урона.");
+
+                if (HealthManager.Instance != null)
+                {
+                    HealthManager.Instance.TakeDamage(defenderType, damage);
+                }
             }
         }
     }
@@ -337,8 +288,6 @@ public class BattleManager : MonoBehaviour
 
         if (pattern == AttackPattern.FlexibleFront)
         {
-            // Логика Буратино для поиска соседей
-            // Примечание: Это работает для игрока. Для врага нужно убедиться, что enemySlots упорядочены так же.
             List<SlotController> mySideSlots = (attacker.isPlayerCard) ? playerSlots : enemySlots;
             int currentIndex = mySideSlots.IndexOf(currentSlot);
 
@@ -363,13 +312,10 @@ public class BattleManager : MonoBehaviour
         return null;
     }
 
-    // ----------------------------------------------------------------------
-    //                           РЕГИСТРАЦИЯ КАРТ
-    // ----------------------------------------------------------------------
+    // --- РЕГИСТРАЦИЯ КАРТ ---
 
     public void RegisterCardDeployment(CardController card, PlayerType player)
     {
-        // Добавляем пометку карте, чья она (полезно для логики)
         card.isPlayerCard = (player == PlayerType.Player);
 
         if (player == PlayerType.Player) playerFieldCards.Add(card);

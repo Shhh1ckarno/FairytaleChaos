@@ -79,7 +79,7 @@ public class CardManager : MonoBehaviour
     /// <summary>
     /// Перемешивает колоду (простой алгоритм Фишера-Йетса).
     /// </summary>
-    private void ShuffleDeck()
+    public void ShuffleDeck()
     {
         int n = deck.Count;
         while (n > 1)

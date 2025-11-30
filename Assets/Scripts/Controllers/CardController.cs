@@ -1,61 +1,40 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using System.Collections; // Required for Coroutines (HP Animation)
+using System.Collections;
 
-// Add required components automatically
 [RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    // ========================================================================================
-    //                                    DATA AND STATE
-    // ========================================================================================
-
+    // ... (Остальные переменные CardData, currentHP и т.д. остаются без изменений) ...
     [Header("Data")]
     public CardData data;
-
-    [Header("Current State")]
-    [Tooltip("Current Health Points.")]
     public int currentHP;
+    [HideInInspector] public SlotController currentSlot;
+    [HideInInspector] public bool isPlayerCard = false;
 
-    [HideInInspector] public SlotController currentSlot; // The slot this card occupies
+    // Флаг защиты от повторной смерти
+    private bool isDead = false;
 
-    [HideInInspector] // Скрываем в Инспекторе, т.к. устанавливается кодом
-    public bool isPlayerCard = false;
-
-    // --- SUPPORT FLAGS (Buffs from Calcifer etc.) ---
+    // ... (Buff State переменные: hasBlock, hasRebirth, isOnFire, bonusDamage) ...
     [Header("Buff State")]
-    [SerializeField] private bool hasBlock = false;      // Tempering (Block first damage)
-    [SerializeField] private bool hasRebirth = false;    // Smelting (Rebirth with 1 HP)
-    [SerializeField] private bool isOnFire = false;      // Ignition (Bonus Damage)
+    [SerializeField] private bool hasBlock = false;
+    [SerializeField] private bool hasRebirth = false;
+    [SerializeField] private bool isOnFire = false;
+    [HideInInspector] public int bonusDamage = 0;
 
-    [HideInInspector] public int bonusDamage = 0;        // Bonus damage value from Fire
-
-    // ========================================================================================
-    //                                 DRAG & DROP SETTINGS
-    // ========================================================================================
-
+    // ... (Настройки Drag & Drop) ...
     [Header("Drag & Drop Settings")]
-    public LayerMask slotLayer;      // Layer for DropZones
-    public float dragHeight = 0.1f;  // Height lift when dragging
-
-    // --- Positioning Variables ---
+    public LayerMask slotLayer;
+    public float dragHeight = 0.1f;
     private Vector3 handPosition;
     private Quaternion handRotation;
     private Transform originalParent;
-
-    // --- Components ---
     private Collider cardCollider;
     private Rigidbody rb;
     private bool isDragging = false;
     private CardDisplay cardDisplay;
-
-    // --- Managers ---
     private HandManager handManager;
     private BattleManager battleManager;
-
-    // ========================================================================================
-    //                                 INITIALIZATION
-    // ========================================================================================
 
     private void Awake()
     {
@@ -68,351 +47,117 @@ public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHand
     {
         cardCollider = GetComponent<Collider>();
         rb = GetComponent<Rigidbody>();
+        if (rb != null) { rb.isKinematic = true; rb.useGravity = false; }
+        if (transform.parent != null) originalParent = transform.parent;
 
-        if (rb != null)
-        {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-        }
-
-        // Save initial parent (usually HandRoot)
-        if (transform.parent != null)
-        {
-            originalParent = transform.parent;
-        }
-
-        // Set correct rotation for hand
         handRotation = Quaternion.Euler(90f, 90f, 0f);
+        if (!isDragging && currentSlot == null) transform.localRotation = handRotation;
 
-        // Apply rotation immediately if not dragging
-        if (!isDragging && currentSlot == null)
-        {
-            transform.localRotation = handRotation;
-        }
-
-        // Fallback initialization
-        if (data != null && currentHP == 0)
-        {
-            currentHP = data.maxHP;
-            UpdateVisuals();
-        }
+        if (data != null && currentHP == 0) { currentHP = data.maxHP; UpdateVisuals(); }
     }
 
-    /// <summary>
-    /// Main setup method called by HandManager.
-    /// </summary>
     public void Initialize(CardData cardData)
     {
         data = cardData;
-
-        // Save parent assigned by HandManager
         originalParent = transform.parent;
-
-        // Visual setup
-        if (cardDisplay != null)
-        {
-            cardDisplay.DisplayCardData(data);
-        }
-
-        // HP setup
+        if (cardDisplay != null) cardDisplay.DisplayCardData(data);
         currentHP = data.maxHP;
         UpdateVisuals();
     }
 
-    // ========================================================================================
-    //                                DRAG & DROP HANDLING
-    // ========================================================================================
-
+    // ... (Методы Drag & Drop: OnPointerDown, OnBeginDrag, OnDrag, OnEndDrag, PlayCard - БЕЗ ИЗМЕНЕНИЙ) ...
     public void OnPointerDown(PointerEventData eventData) { }
-
-    // CardController.cs (Добавляем проверку в OnBeginDrag)
-
     public void OnBeginDrag(PointerEventData eventData)
     {
-        // 1. Проверка: Если карта в слоте, двигать нельзя
         if (currentSlot != null) return;
-
-        // 2. НОВАЯ ПРОВЕРКА: Если это карта врага, двигать нельзя!
-        // Как понять, что карта врага?
-        // Самый простой способ: если она не в руке и не в слоте, или если мы пометили её.
-
-        // Добавим простой флаг, который мы не использовали, но сейчас пригодится.
-        // Или проверим, является ли она ребенком HandRoot игрока.
-
-        if (HandManager.Instance != null && !HandManager.Instance.HandContains(this))
-        {
-            // Если карты нет в руке игрока, значит это карта врага (или она уже на столе)
-            return;
-        }
-
+        if (HandManager.Instance != null && !HandManager.Instance.HandContains(this)) return;
         isDragging = true;
         transform.SetParent(null);
         if (cardCollider != null) cardCollider.enabled = true;
     }
-
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDragging || Camera.main == null) return;
-
         Ray ray = Camera.main.ScreenPointToRay(eventData.position);
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f))
-        {
-            transform.position = hit.point + Vector3.up * dragHeight;
-        }
-
-        // OPTIONAL: Add cost warning logic here (turn red if FP too low)
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f)) transform.position = hit.point + Vector3.up * dragHeight;
     }
-
     public void OnEndDrag(PointerEventData eventData)
     {
         isDragging = false;
-
         if (Camera.main == null) { ReturnToHand(); return; }
-
         SlotController targetSlot = null;
         Ray ray = Camera.main.ScreenPointToRay(eventData.position);
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, slotLayer)) targetSlot = hit.collider.GetComponent<SlotController>();
 
-        // 1. Find Slot
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f, slotLayer))
-        {
-            targetSlot = hit.collider.GetComponent<SlotController>();
-        }
-
-        // 2. Validate Slot & Cost
         bool isSlotValid = targetSlot != null && !targetSlot.IsOccupied() && !targetSlot.isEnemySlot;
         bool isCostMet = false;
+        if (isSlotValid && battleManager != null && data != null) isCostMet = battleManager.TrySpendFearPoints(BattleManager.PlayerType.Player, data.costFear);
 
-        if (isSlotValid && battleManager != null && data != null)
-        {
-            isCostMet = battleManager.TrySpendFearPoints(BattleManager.PlayerType.Player, data.costFear);
-        }
-
-        // 3. Success or Fail
-        if (isSlotValid && isCostMet)
-        {
-            PlayCard(targetSlot);
-        }
+        if (isSlotValid && isCostMet) PlayCard(targetSlot);
         else
         {
-            if (!isCostMet && isSlotValid)
-            {
-                Debug.LogWarning($"[Card] Not enough FP for {data.displayName}.");
-            }
-
             ReturnToHand();
-
-            if (handManager != null)
-            {
-                handManager.UpdateHandPositions();
-            }
+            if (handManager != null) handManager.UpdateHandPositions();
         }
     }
-
     private void PlayCard(SlotController targetSlot)
     {
         currentSlot = targetSlot;
         targetSlot.SetOccupant(this);
-
-        if (handManager != null)
-        {
-            handManager.RemoveFromHand(this);
-        }
-
-        if (battleManager != null)
-        {
-            battleManager.RegisterCardDeployment(this, BattleManager.PlayerType.Player);
-        }
+        if (handManager != null) handManager.RemoveFromHand(this);
+        if (battleManager != null) battleManager.RegisterCardDeployment(this, BattleManager.PlayerType.Player);
     }
 
-    // ========================================================================================
-    //                                HELPER METHODS
-    // ========================================================================================
-
+    // ... (Helper Methods: ReturnToHand, SetHandPosition, UpdateVisuals, GetTotalAttack - БЕЗ ИЗМЕНЕНИЙ) ...
     public void ReturnToHand()
     {
-        if (originalParent != null)
-        {
-            transform.SetParent(originalParent);
-        }
-        else if (handManager != null && handManager.handRoot != null)
-        {
-            transform.SetParent(handManager.handRoot);
-            originalParent = handManager.handRoot;
-        }
-
-        if (handManager != null && !handManager.HandContains(this))
-        {
-            handManager.AddCardBackToHand(this);
-        }
-
+        if (originalParent != null) transform.SetParent(originalParent);
+        else if (handManager != null && handManager.handRoot != null) { transform.SetParent(handManager.handRoot); originalParent = handManager.handRoot; }
+        if (handManager != null && !handManager.HandContains(this)) handManager.AddCardBackToHand(this);
         transform.localPosition = handPosition;
         transform.localRotation = handRotation;
         currentSlot = null;
     }
+    public void SetHandPosition(Vector3 pos) { handPosition = pos; if (currentSlot == null) { transform.localPosition = pos; transform.localRotation = handRotation; } }
+    private void UpdateVisuals() { if (cardDisplay != null) { cardDisplay.UpdateHPText(currentHP); if (isOnFire) cardDisplay.UpdateAttackText(GetTotalAttack()); } }
+    public int GetTotalAttack() { return data.attack + bonusDamage; }
 
-    public void SetHandPosition(Vector3 pos)
-    {
-        handPosition = pos;
-        if (currentSlot == null)
-        {
-            transform.localPosition = pos;
-            transform.localRotation = handRotation;
-        }
-    }
-
-    private void UpdateVisuals()
-    {
-        if (cardDisplay != null)
-        {
-            cardDisplay.UpdateHPText(currentHP);
-
-            // If we have bonus damage, update attack text too
-            if (isOnFire)
-            {
-                cardDisplay.UpdateAttackText(GetTotalAttack());
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets total attack including buffs.
-    /// </summary>
-    public int GetTotalAttack()
-    {
-        return data.attack + bonusDamage;
-    }
-
-    // ========================================================================================
-    //                            COMBAT & SUPPORT LOGIC
-    // ========================================================================================
-
-    /// <summary>
-    /// Takes damage, accounting for Block. Starts HP animation.
-    /// </summary>
+    // ... (Logic: TakeDamage, Heal, ApplyBlock, ApplyRebirth, ApplyOnFire, RemoveBlock, RemoveAllDebuffs - БЕЗ ИЗМЕНЕНИЙ) ...
     public void TakeDamage(int damage)
     {
-        if (hasBlock)
-        {
-            Debug.Log($"{data.displayName} blocked damage (Tempering)!");
-            RemoveBlock(); // Block is one-time use
-            return;
-        }
-
-        // Calculate new HP
+        if (hasBlock) { Debug.Log($"{data.displayName} blocked damage!"); RemoveBlock(); return; }
         int newHP = currentHP - damage;
-
-        // Start smooth animation
         StartCoroutine(AnimateHealthChange(newHP));
-
         Debug.Log($"{data.displayName} took {damage} damage.");
-        CheckDeath(newHP); // Pass the future HP to check death logic
+        CheckDeath(newHP);
     }
+    public void Heal(int amount) { int newHP = Mathf.Min(currentHP + amount, data.maxHP); StartCoroutine(AnimateHealthChange(newHP)); }
+    public void ApplyBlock() { hasBlock = true; if (cardDisplay != null) cardDisplay.UpdateStatusText("ЗАКАЛКА", true); }
+    private void RemoveBlock() { hasBlock = false; if (cardDisplay != null) cardDisplay.UpdateStatusText("", false); }
+    public void ApplyRebirth() { hasRebirth = true; if (cardDisplay != null) cardDisplay.UpdateStatusText("ПЕРЕПЛАВКА", true); }
+    public void ApplyOnFire(int bonusAtk) { if (isOnFire) return; isOnFire = true; bonusDamage = bonusAtk; if (cardDisplay != null) { cardDisplay.UpdateStatusText("ПОДЖОГ", true); cardDisplay.UpdateAttackText(GetTotalAttack()); } }
+    public void RemoveAllDebuffs() { if (isOnFire) { isOnFire = false; bonusDamage = 0; if (cardDisplay != null) { cardDisplay.UpdateStatusText("", false); cardDisplay.UpdateAttackText(data.attack); } } }
 
-    /// <summary>
-    /// Heals the unit (Winnie Pooh support).
-    /// </summary>
-    public void Heal(int amount)
-    {
-        int newHP = Mathf.Min(currentHP + amount, data.maxHP);
-        StartCoroutine(AnimateHealthChange(newHP));
-        Debug.Log($"{data.displayName} healed for {amount}.");
-    }
-
-    // --- BUFF METHODS ---
-
-    /// <summary>
-    /// Apply "Tempering" (Block).
-    /// </summary>
-    public void ApplyBlock()
-    {
-        hasBlock = true;
-        if (cardDisplay != null) cardDisplay.UpdateStatusText("ЗАКАЛКА", true); // TEMPERING
-        Debug.Log($"{data.displayName} received Block.");
-    }
-
-    private void RemoveBlock()
-    {
-        hasBlock = false;
-        if (cardDisplay != null) cardDisplay.UpdateStatusText("", false);
-    }
-
-    /// <summary>
-    /// Apply "Smelting" (Rebirth).
-    /// </summary>
-    public void ApplyRebirth()
-    {
-        hasRebirth = true;
-        if (cardDisplay != null) cardDisplay.UpdateStatusText("ПЕРЕПЛАВКА", true); // REBIRTH
-        Debug.Log($"{data.displayName} received Rebirth.");
-    }
-
-    /// <summary>
-    /// Apply "Ignition" (Fire/Bonus Damage).
-    /// </summary>
-    public void ApplyOnFire(int bonusAtk)
-    {
-        if (isOnFire) return;
-
-        isOnFire = true;
-        bonusDamage = bonusAtk;
-
-        if (cardDisplay != null)
-        {
-            cardDisplay.UpdateStatusText("ПОДЖОГ", true); // IGNITION
-            cardDisplay.UpdateAttackText(GetTotalAttack());
-        }
-        Debug.Log($"{data.displayName} is On Fire! (+{bonusAtk} ATK).");
-    }
-
-    /// <summary>
-    /// Remove all debuffs (Cauterization).
-    /// </summary>
-    public void RemoveAllDebuffs()
-    {
-        // 1. Remove Fire
-        if (isOnFire)
-        {
-            isOnFire = false;
-            bonusDamage = 0;
-            if (cardDisplay != null)
-            {
-                cardDisplay.UpdateStatusText("", false);
-                cardDisplay.UpdateAttackText(data.attack); // Reset attack text
-            }
-        }
-
-        // Add logic for other debuffs here...
-        Debug.Log($"{data.displayName}: All debuffs removed.");
-    }
-
-    // --- DEATH LOGIC ---
+    // --- ЛОГИКА СМЕРТИ (ОБНОВЛЕННАЯ) ---
 
     private void CheckDeath(int futureHP)
     {
-        // We check against the future HP because animation takes time,
-        // but logic should happen immediately or after animation.
-        // For now, let's update currentHP immediately for logic, 
-        // but visual is handled by Coroutine.
-
-        // Wait for animation to finish before destroying? 
-        // For simplicity in this turn-based logic, we check immediately.
+        if (isDead) return; // Если уже мертва, не трогаем
 
         if (futureHP <= 0)
         {
             if (hasRebirth)
             {
-                Debug.Log($"{data.displayName} REBIRTHS!");
-
-                // Rebirth logic
+                Debug.Log($"{data.displayName} ПЕРЕРОЖДАЕТСЯ!");
                 int rebirthHP = 1;
-                StartCoroutine(AnimateHealthChange(rebirthHP)); // Animate back to 1
-
+                StartCoroutine(AnimateHealthChange(rebirthHP));
                 hasRebirth = false;
-                if (cardDisplay != null) cardDisplay.UpdateStatusText("", false); // Remove Rebirth text
+                if (cardDisplay != null) cardDisplay.UpdateStatusText("", false);
                 return;
             }
 
-            // Delay death slightly to allow hit animation
+            // Ставим флаг смерти СРАЗУ, чтобы не вызвать логику дважды
+            isDead = true;
             StartCoroutine(DieRoutine());
         }
     }
@@ -421,27 +166,21 @@ public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHand
     {
         float startTime = Time.time;
         int initialHP = currentHP;
-        currentHP = targetHP; // Update logic immediately
+        currentHP = targetHP;
 
         while (Time.time < startTime + duration)
         {
             float t = (Time.time - startTime) / duration;
             int animatedHP = (int)Mathf.Lerp(initialHP, targetHP, t);
-
-            if (cardDisplay != null)
-                cardDisplay.UpdateHPText(animatedHP);
-
+            if (cardDisplay != null) cardDisplay.UpdateHPText(animatedHP);
             yield return null;
         }
-
-        if (cardDisplay != null)
-            cardDisplay.UpdateHPText(targetHP);
+        if (cardDisplay != null) cardDisplay.UpdateHPText(targetHP);
     }
 
     private IEnumerator DieRoutine()
     {
-        // Wait for a moment so player sees 0 HP
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.5f); // Ждем анимацию
         Die();
     }
 
@@ -449,16 +188,19 @@ public class CardController : MonoBehaviour, IPointerDownHandler, IBeginDragHand
     {
         Debug.Log($"Card {data.displayName} destroyed.");
 
+        // 1. Очищаем слот
         if (currentSlot != null)
         {
             currentSlot.ClearOccupant();
         }
 
+        // 2. Удаляем из списков битвы
         if (battleManager != null)
         {
             battleManager.DeregisterCard(this);
         }
 
+        // 3. Уничтожаем объект
         Destroy(gameObject);
     }
 }
