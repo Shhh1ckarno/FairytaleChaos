@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   artwork: {fileID: 0}
   prefab: {fileID: 4758633142091120165, guid: 9c5c6214b5efb564a849d48a0958c560, type: 3}
-  costFear: 4
+  costFear: 3
   attack: 2
   maxHP: 9
   supportHealAmount: 0
